@@ -6,6 +6,8 @@ param location string = resourceGroup().location
 var cosmosDBDatabaseName = 'FlightTests'
 var cosmosDBContainerName = 'FlightTests'
 var cosmosDBContainerPartitionKey = '/droneId'
+var logAnalyticsWorkspaceName = 'ToyLogs'
+var cosmosDBAccountDiagnosticSettingsName = 'route-logs-to-log-analytics'
 
 
 resource cosmosDBAccount 'Microsoft.DocumentDB/databaseAccounts@2020-04-01' = {
@@ -47,5 +49,23 @@ resource cosmosDBDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@20
       }
       options: {}
     }
+  }
+}
+
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2020-03-01-preview' existing = {
+  name: logAnalyticsWorkspaceName
+}
+
+resource cosmosDBAccountDiagnostics 'Microsoft.Insights/diagnosticSettings@2017-05-01-preview' = {
+  scope: cosmosDBAccount
+  name: cosmosDBAccountDiagnosticSettingsName
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      {
+        category: 'DataPlaneRequests'
+        enabled: true
+      }
+    ]
   }
 }
