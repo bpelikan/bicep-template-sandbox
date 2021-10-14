@@ -1,6 +1,7 @@
 param cosmosDBAccountName string = 'toyrnd-${uniqueString(resourceGroup().id)}'
 param cosmosDBDatabaseThroughput int = 400
 param location string = resourceGroup().location
+param storageAccountName string
 
 
 var cosmosDBDatabaseName = 'FlightTests'
@@ -8,6 +9,7 @@ var cosmosDBContainerName = 'FlightTests'
 var cosmosDBContainerPartitionKey = '/droneId'
 var logAnalyticsWorkspaceName = 'ToyLogs'
 var cosmosDBAccountDiagnosticSettingsName = 'route-logs-to-log-analytics'
+var storageAccountBlobDiagnosticSettingsName = 'route-logs-to-log-analytics'
 
 
 resource cosmosDBAccount 'Microsoft.DocumentDB/databaseAccounts@2020-04-01' = {
@@ -52,6 +54,7 @@ resource cosmosDBDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@20
   }
 }
 
+
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2020-03-01-preview' existing = {
   name: logAnalyticsWorkspaceName
 }
@@ -64,6 +67,37 @@ resource cosmosDBAccountDiagnostics 'Microsoft.Insights/diagnosticSettings@2017-
     logs: [
       {
         category: 'DataPlaneRequests'
+        enabled: true
+      }
+    ]
+  }
+}
+
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2019-06-01' existing = {
+  name: storageAccountName
+
+  resource blobService 'blobServices' existing = {
+    name: 'default'
+  }
+}
+
+resource storageAccountBlobDiagnostics 'Microsoft.Insights/diagnosticSettings@2017-05-01-preview' = {
+  scope: storageAccount::blobService
+  name: storageAccountBlobDiagnosticSettingsName
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      {
+        category: 'StorageRead'
+        enabled: true
+      }
+      {
+        category: 'StorageWrite'
+        enabled: true
+      }
+      {
+        category: 'StorageDelete'
         enabled: true
       }
     ]
