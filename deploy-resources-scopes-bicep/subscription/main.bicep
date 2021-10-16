@@ -1,7 +1,11 @@
 targetScope = 'subscription'
 
+param virtualNetworkName string
+param virtualNetworkAddressPrefix string
+
 var policyDefinitionName = 'DenyFandGSeriesVMs'
 var policyAssignmentName = 'DenyFandGSeriesVMs'
+var resourceGroupName = 'ToyNetworking'
 
 
 resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2020-03-01' = {
@@ -42,5 +46,19 @@ resource policyAssignment 'Microsoft.Authorization/policyAssignments@2020-03-01'
   name: policyAssignmentName
   properties: {
     policyDefinitionId: policyDefinition.id
+  }
+}
+
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {
+  name: resourceGroupName
+  location: deployment().location
+}
+
+module virtualNetwork 'modules/virtualNetwork.bicep' = {
+  scope: resourceGroup
+  name: 'virtualNetwork'
+  params: {
+    virtualNetworkName: virtualNetworkName
+    virtualNetworkAddressPrefix: virtualNetworkAddressPrefix
   }
 }
